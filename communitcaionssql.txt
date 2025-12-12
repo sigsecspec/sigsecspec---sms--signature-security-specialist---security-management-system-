@@ -1,0 +1,123 @@
+-- Communications Schema for Signature Security Specialist
+-- Migration: Create communications tables
+-- Date: 2024
+-- Description: Creates tables for DMs, Team Chats, Support Channels, Group Chats, and Mission Chats
+-- Safe to run multiple times - uses IF NOT EXISTS clauses
+
+-- 1. Conversations Table
+-- Stores all chat threads: DMs, Team Chats, Support Channels, Group Chats, Mission Chats
+
+CREATE TABLE IF NOT EXISTS site.conversations (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  type text NOT NULL, -- 'dm', 'team_chat', 'group_chat', 'mission_chat'
+  sub_type text, -- 'support_channel', 'peer_channel', 'company_channel', 'team_channel'
+  name text, -- Display title (e.g., "Mission #204", "Guards - Alpha")
+  related_id uuid, -- Link to specific mission or team ID if applicable
+  status text DEFAULT 'active', -- 'active', 'archived'
+  avatar_url text,
+  metadata jsonb DEFAULT '{}'::jsonb, -- Store extra context like mission dates or custom tags
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  last_message text,
+  last_message_time timestamp with time zone,
+  CONSTRAINT conversations_pkey PRIMARY KEY (id)
+);
+
+-- 2. Conversation Participants
+-- Links users to conversations
+
+CREATE TABLE IF NOT EXISTS site.conversation_participants (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  conversation_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  role text, -- Role within the chat if needed (e.g., 'admin', 'member')
+  joined_at timestamp with time zone DEFAULT now(),
+  last_read_at timestamp with time zone,
+  is_archived boolean DEFAULT false,
+  CONSTRAINT conversation_participants_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_convo_id FOREIGN KEY (conversation_id) REFERENCES site.conversations(id) ON DELETE CASCADE,
+  CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES site.profiles(id) ON DELETE CASCADE
+);
+
+-- 3. Messages
+-- Individual messages within a conversation
+
+CREATE TABLE IF NOT EXISTS site.messages (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  conversation_id uuid NOT NULL,
+  sender_id uuid, -- Nullable for system messages
+  content text,
+  type text DEFAULT 'text', -- 'text', 'image', 'file', 'system'
+  attachments jsonb DEFAULT '[]'::jsonb,
+  is_read boolean DEFAULT false, -- Simple read flag, for group chats rely on last_read_at in participants
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT messages_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_msg_convo FOREIGN KEY (conversation_id) REFERENCES site.conversations(id) ON DELETE CASCADE,
+  CONSTRAINT fk_msg_sender FOREIGN KEY (sender_id) REFERENCES site.profiles(id) ON DELETE SET NULL
+);
+
+-- Indexes for performance (using IF NOT EXISTS)
+CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON site.messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_participants_user_id ON site.conversation_participants(user_id);
+CREATE INDEX IF NOT EXISTS idx_participants_conversation_id ON site.conversation_participants(conversation_id);
+
+-- Trigger function to update conversation updated_at on new message
+CREATE OR REPLACE FUNCTION site.update_conversation_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE site.conversations
+  SET updated_at = NOW(),
+      last_message = NEW.content,
+      last_message_time = NEW.created_at
+  WHERE id = NEW.conversation_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Drop trigger if exists, then recreate
+DROP TRIGGER IF EXISTS update_chat_timestamp ON site.messages;
+
+CREATE TRIGGER update_chat_timestamp
+AFTER INSERT ON site.messages
+FOR EACH ROW
+EXECUTE FUNCTION site.update_conversation_timestamp();
+
+-- Add comments for documentation
+COMMENT ON TABLE site.conversations IS 'Stores all chat threads: DMs, Team Chats, Support Channels, Group Chats, Mission Chats';
+COMMENT ON TABLE site.conversation_participants IS 'Links users to conversations with read status and role information';
+COMMENT ON TABLE site.messages IS 'Individual messages within conversations with support for attachments';
+
+-- Example SQL to Seed Support Channels for Existing Guards (Run manually if needed)
+/*
+DO $$
+DECLARE
+    guard_rec RECORD;
+    channel_name TEXT;
+    new_convo_id UUID;
+    support_levels TEXT[] := ARRAY['Owners', 'Management Team', 'Dispatch', 'Operations Team', 'Supervision Team', 'Training Team'];
+    level TEXT;
+BEGIN
+    FOR guard_rec IN SELECT id, full_name, badge_number FROM site.guards JOIN site.profiles ON site.guards.id = site.profiles.id WHERE site.profiles.status = 'active'
+    LOOP
+        FOREACH level IN ARRAY support_levels
+        LOOP
+            -- Check if exists (simplified check)
+            -- Ideally check conversation_participants for this user and convo metadata
+            
+            -- Insert Conversation
+            INSERT INTO site.conversations (type, sub_type, name, metadata)
+            VALUES ('team_chat', 'support_channel', level, jsonb_build_object('guardId', guard_rec.id, 'guardName', guard_rec.full_name, 'guardBadge', guard_rec.badge_number, 'supportLevel', level))
+            RETURNING id INTO new_convo_id;
+
+            -- Add Guard as Participant
+            INSERT INTO site.conversation_participants (conversation_id, user_id, role)
+            VALUES (new_convo_id, guard_rec.id, 'guard');
+            
+            -- Add System Message
+            INSERT INTO site.messages (conversation_id, sender_id, content, type)
+            VALUES (new_convo_id, NULL, 'Channel created. You are connected to ' || level, 'system');
+        END LOOP;
+    END LOOP;
+END $$;
+*/
+

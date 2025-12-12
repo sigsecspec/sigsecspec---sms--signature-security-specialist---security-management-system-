@@ -1,0 +1,458 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE site.application_references (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  application_id uuid,
+  application_type text,
+  name text,
+  phone text,
+  relationship text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT application_references_pkey PRIMARY KEY (id)
+);
+CREATE TABLE site.certification_types (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  cert_id text NOT NULL UNIQUE,
+  name text NOT NULL,
+  category text,
+  is_required boolean DEFAULT false,
+  description text,
+  requires_number boolean DEFAULT false,
+  requires_expiration boolean DEFAULT false,
+  is_active boolean DEFAULT true,
+  sort_order integer DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT certification_types_pkey PRIMARY KEY (id)
+);
+CREATE TABLE site.client_applications (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  status USER-DEFINED DEFAULT 'incomplete'::site.application_status,
+  submitted_at timestamp with time zone,
+  business_name text,
+  dba_name text,
+  industry_type text,
+  business_website text,
+  years_in_business integer,
+  address_street text,
+  address_city text,
+  address_state text,
+  address_zip text,
+  insurance_provider text,
+  policy_number text,
+  coverage_amount numeric,
+  estimated_budget_monthly numeric,
+  required_guards_count integer,
+  service_start_date date,
+  security_concerns text,
+  agreed_to_terms boolean DEFAULT false,
+  digital_signature text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT client_applications_pkey PRIMARY KEY (id),
+  CONSTRAINT client_applications_user_id_fkey FOREIGN KEY (user_id) REFERENCES site.profiles(id)
+);
+CREATE TABLE site.clients (
+  id uuid NOT NULL,
+  business_name text,
+  primary_contact_name text,
+  business_email text,
+  business_phone text,
+  business_address text,
+  industry_type text,
+  billing_method text,
+  satisfaction_rating numeric DEFAULT 5.0,
+  budget_utilization numeric DEFAULT 0,
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT clients_pkey PRIMARY KEY (id),
+  CONSTRAINT clients_id_fkey FOREIGN KEY (id) REFERENCES site.profiles(id)
+);
+CREATE TABLE site.contracts (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  client_id uuid,
+  type text,
+  status text DEFAULT 'draft'::text,
+  start_date date,
+  end_date date,
+  budget_total numeric,
+  budget_used numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT contracts_pkey PRIMARY KEY (id),
+  CONSTRAINT contracts_client_id_fkey FOREIGN KEY (client_id) REFERENCES site.clients(id)
+);
+CREATE TABLE site.conversation_participants (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  conversation_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  role text,
+  joined_at timestamp with time zone DEFAULT now(),
+  last_read_at timestamp with time zone,
+  CONSTRAINT conversation_participants_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_convo_id FOREIGN KEY (conversation_id) REFERENCES site.conversations(id),
+  CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES site.profiles(id)
+);
+CREATE TABLE site.conversations (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  type text NOT NULL,
+  name text,
+  related_id uuid,
+  status text DEFAULT 'active'::text,
+  avatar_url text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  last_message text,
+  last_message_time timestamp with time zone,
+  CONSTRAINT conversations_pkey PRIMARY KEY (id)
+);
+CREATE TABLE site.guard_applications (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  status USER-DEFINED DEFAULT 'incomplete'::site.application_status,
+  submitted_at timestamp with time zone,
+  reviewed_by uuid,
+  reviewed_at timestamp with time zone,
+  review_notes text,
+  address_street text,
+  address_city text,
+  address_state text,
+  address_zip text,
+  ssn_encrypted text,
+  dl_number text,
+  dl_state text,
+  dl_exp_date date,
+  guard_card_number text,
+  guard_card_state text,
+  guard_card_exp_date date,
+  has_cpr_cert boolean DEFAULT false,
+  cpr_exp_date date,
+  years_experience integer DEFAULT 0,
+  is_military_veteran boolean DEFAULT false,
+  military_branch text,
+  willing_to_travel boolean DEFAULT false,
+  days_available ARRAY,
+  shifts_preferred ARRAY,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT guard_applications_pkey PRIMARY KEY (id),
+  CONSTRAINT guard_applications_user_id_fkey FOREIGN KEY (user_id) REFERENCES site.profiles(id),
+  CONSTRAINT guard_applications_reviewed_by_fkey FOREIGN KEY (reviewed_by) REFERENCES site.profiles(id)
+);
+CREATE TABLE site.guards (
+  id uuid NOT NULL,
+  rank text DEFAULT 'OFC'::text,
+  guard_level integer DEFAULT 1,
+  badge_number text,
+  pay_rate numeric,
+  hire_date date,
+  performance_rating numeric DEFAULT 5.0,
+  mission_count integer DEFAULT 0,
+  last_activity timestamp with time zone,
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT guards_pkey PRIMARY KEY (id),
+  CONSTRAINT guards_id_fkey FOREIGN KEY (id) REFERENCES site.profiles(id)
+);
+CREATE TABLE site.incident_reports (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  mission_id uuid,
+  reported_by uuid,
+  type text,
+  description text,
+  status text DEFAULT 'open'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT incident_reports_pkey PRIMARY KEY (id),
+  CONSTRAINT incident_reports_mission_id_fkey FOREIGN KEY (mission_id) REFERENCES site.missions(id),
+  CONSTRAINT incident_reports_reported_by_fkey FOREIGN KEY (reported_by) REFERENCES site.profiles(id)
+);
+CREATE TABLE site.lead_guard_requests (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  guard_id uuid,
+  client_id uuid,
+  contract_id uuid,
+  status text DEFAULT 'pending'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT lead_guard_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT lead_guard_requests_guard_id_fkey FOREIGN KEY (guard_id) REFERENCES site.guards(id),
+  CONSTRAINT lead_guard_requests_client_id_fkey FOREIGN KEY (client_id) REFERENCES site.clients(id),
+  CONSTRAINT lead_guard_requests_contract_id_fkey FOREIGN KEY (contract_id) REFERENCES site.contracts(id)
+);
+CREATE TABLE site.messages (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  sender_id uuid,
+  recipient_id uuid,
+  subject text,
+  body text,
+  is_read boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT messages_pkey PRIMARY KEY (id),
+  CONSTRAINT messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES site.profiles(id),
+  CONSTRAINT messages_recipient_id_fkey FOREIGN KEY (recipient_id) REFERENCES site.profiles(id)
+);
+CREATE TABLE site.mission_assignments (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  mission_id uuid,
+  guard_id uuid,
+  role text DEFAULT 'Guard'::text,
+  status text DEFAULT 'Scheduled'::text,
+  check_in_time timestamp with time zone,
+  check_out_time timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT mission_assignments_pkey PRIMARY KEY (id),
+  CONSTRAINT mission_assignments_mission_id_fkey FOREIGN KEY (mission_id) REFERENCES site.missions(id),
+  CONSTRAINT mission_assignments_guard_id_fkey FOREIGN KEY (guard_id) REFERENCES site.guards(id)
+);
+CREATE TABLE site.mission_logs (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  mission_id uuid,
+  action text NOT NULL,
+  details text,
+  timestamp timestamp with time zone DEFAULT now(),
+  CONSTRAINT mission_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT mission_logs_mission_id_fkey FOREIGN KEY (mission_id) REFERENCES site.missions(id)
+);
+CREATE TABLE site.missions (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  client_id uuid,
+  site_id uuid,
+  team_id uuid,
+  type text,
+  status USER-DEFINED DEFAULT 'pending'::site.mission_status,
+  start_time timestamp with time zone,
+  end_time timestamp with time zone,
+  required_guards integer DEFAULT 1,
+  notes text,
+  alerts integer DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT missions_pkey PRIMARY KEY (id),
+  CONSTRAINT missions_client_id_fkey FOREIGN KEY (client_id) REFERENCES site.clients(id),
+  CONSTRAINT missions_team_id_fkey FOREIGN KEY (team_id) REFERENCES site.teams(id),
+  CONSTRAINT fk_missions_site FOREIGN KEY (site_id) REFERENCES site.sites(id)
+);
+CREATE TABLE site.notifications (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid,
+  title text,
+  message text,
+  is_read boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT notifications_pkey PRIMARY KEY (id),
+  CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES site.profiles(id)
+);
+CREATE TABLE site.payroll (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid,
+  pay_period_start date,
+  pay_period_end date,
+  hours_worked numeric,
+  total_pay numeric,
+  status text DEFAULT 'pending'::text,
+  payment_date date,
+  breakdown jsonb,
+  history jsonb,
+  CONSTRAINT payroll_pkey PRIMARY KEY (id),
+  CONSTRAINT payroll_user_id_fkey FOREIGN KEY (user_id) REFERENCES site.profiles(id)
+);
+CREATE TABLE site.profile_logs (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  profile_id uuid,
+  action text NOT NULL,
+  performed_by text,
+  role text,
+  note text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT profile_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT profile_logs_profile_id_fkey FOREIGN KEY (profile_id) REFERENCES site.profiles(id)
+);
+CREATE TABLE site.profiles (
+  id uuid NOT NULL,
+  email text NOT NULL UNIQUE,
+  full_name text,
+  role USER-DEFINED NOT NULL DEFAULT 'guard'::site.user_role,
+  status USER-DEFINED DEFAULT 'pending'::site.profile_status,
+  phone_primary text,
+  phone_secondary text,
+  avatar_url text,
+  address_street text,
+  address_unit text,
+  address_city text,
+  address_state text,
+  address_zip text,
+  bio text,
+  date_of_birth date,
+  gender text,
+  is_blocked boolean DEFAULT false,
+  team_id uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  metadata jsonb DEFAULT '{}'::jsonb,
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id),
+  CONSTRAINT fk_profiles_team FOREIGN KEY (team_id) REFERENCES site.teams(id)
+);
+CREATE TABLE site.resources (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  title text,
+  type text,
+  category text,
+  url text,
+  size text,
+  duration text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT resources_pkey PRIMARY KEY (id)
+);
+CREATE TABLE site.site_access_points (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  site_id uuid,
+  type text,
+  location_desc text,
+  access_value text,
+  instructions text,
+  CONSTRAINT site_access_points_pkey PRIMARY KEY (id),
+  CONSTRAINT site_access_points_site_id_fkey FOREIGN KEY (site_id) REFERENCES site.sites(id)
+);
+CREATE TABLE site.site_posts (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  site_id uuid,
+  name text,
+  instructions text,
+  required_level integer,
+  status text DEFAULT 'active'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT site_posts_pkey PRIMARY KEY (id),
+  CONSTRAINT site_posts_site_id_fkey FOREIGN KEY (site_id) REFERENCES site.sites(id)
+);
+CREATE TABLE site.sites (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  client_id uuid,
+  name text NOT NULL,
+  type text,
+  address text,
+  team_id uuid,
+  status text DEFAULT 'active'::text,
+  access_info jsonb,
+  documents jsonb,
+  history jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT sites_pkey PRIMARY KEY (id),
+  CONSTRAINT sites_client_id_fkey FOREIGN KEY (client_id) REFERENCES site.clients(id),
+  CONSTRAINT sites_team_id_fkey FOREIGN KEY (team_id) REFERENCES site.teams(id)
+);
+CREATE TABLE site.staff_applications (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  position_type text,
+  status USER-DEFINED DEFAULT 'incomplete'::site.application_status,
+  submitted_at timestamp with time zone,
+  years_security_exp integer,
+  years_management_exp integer,
+  highest_education text,
+  prev_companies text,
+  roles_held text,
+  achievements text,
+  why_interested text,
+  skill_leadership text,
+  skill_communication text,
+  skill_operations text,
+  skill_technology text,
+  resume_url text,
+  cover_letter text,
+  digital_signature text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT staff_applications_pkey PRIMARY KEY (id),
+  CONSTRAINT staff_applications_user_id_fkey FOREIGN KEY (user_id) REFERENCES site.profiles(id)
+);
+CREATE TABLE site.teams (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  name text NOT NULL,
+  code text NOT NULL UNIQUE,
+  director_id uuid,
+  manager_id uuid,
+  status text DEFAULT 'active'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT teams_pkey PRIMARY KEY (id),
+  CONSTRAINT teams_director_id_fkey FOREIGN KEY (director_id) REFERENCES site.profiles(id),
+  CONSTRAINT teams_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES site.profiles(id)
+);
+CREATE TABLE site.training_definitions (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  title text,
+  category text,
+  description text,
+  content text,
+  questions jsonb,
+  duration text,
+  active boolean DEFAULT true,
+  CONSTRAINT training_definitions_pkey PRIMARY KEY (id)
+);
+CREATE TABLE site.uniform_distributions (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid,
+  status text DEFAULT 'pending'::text,
+  reason text,
+  date_requested timestamp with time zone DEFAULT now(),
+  date_sent timestamp with time zone,
+  date_received timestamp with time zone,
+  tracking_number text,
+  items jsonb,
+  history jsonb,
+  CONSTRAINT uniform_distributions_pkey PRIMARY KEY (id),
+  CONSTRAINT uniform_distributions_user_id_fkey FOREIGN KEY (user_id) REFERENCES site.profiles(id)
+);
+CREATE TABLE site.uniform_inventory (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  name text,
+  category text,
+  size text,
+  stock_level integer DEFAULT 0,
+  reorder_point integer DEFAULT 10,
+  location text,
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT uniform_inventory_pkey PRIMARY KEY (id)
+);
+CREATE TABLE site.user_certifications (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid,
+  name text,
+  issuer text,
+  issue_date date,
+  expiry_date date,
+  status text DEFAULT 'valid'::text,
+  doc_url text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT user_certifications_pkey PRIMARY KEY (id),
+  CONSTRAINT user_certifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES site.profiles(id)
+);
+CREATE TABLE site.user_training_progress (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid,
+  module_id uuid,
+  status text DEFAULT 'not_started'::text,
+  score integer,
+  completed_at timestamp with time zone,
+  attempts integer DEFAULT 0,
+  metadata jsonb,
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT user_training_progress_pkey PRIMARY KEY (id),
+  CONSTRAINT user_training_progress_user_id_fkey FOREIGN KEY (user_id) REFERENCES site.profiles(id),
+  CONSTRAINT user_training_progress_module_id_fkey FOREIGN KEY (module_id) REFERENCES site.training_definitions(id)
+);
+CREATE TABLE site.vehicles (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  name text,
+  type text,
+  make_model text,
+  year text,
+  license_plate text,
+  vin text,
+  status text DEFAULT 'available'::text,
+  mileage integer DEFAULT 0,
+  fuel_level integer DEFAULT 100,
+  team_id uuid,
+  history jsonb,
+  maintenance_history jsonb,
+  fees jsonb,
+  CONSTRAINT vehicles_pkey PRIMARY KEY (id),
+  CONSTRAINT vehicles_team_id_fkey FOREIGN KEY (team_id) REFERENCES site.teams(id)
+);

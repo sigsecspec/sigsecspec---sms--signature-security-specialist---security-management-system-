@@ -1,0 +1,171 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Signature Security Specialist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --brand-black: #050505;
+        --brand-ebony: #111111;
+        --brand-sage: #7C9A92;
+        --brand-silver: #C0C0C0;
+        --glass-border: rgba(255, 255, 255, 0.08);
+
+        /* Default Dark Theme */
+        --theme-bg-primary: #050505;
+        --theme-bg-secondary: #111111;
+        --theme-bg-tertiary: #1A1A1A;
+        --theme-text-primary: #FFFFFF;
+        --theme-text-secondary: #A1A1AA;
+        --theme-text-muted: #52525B;
+        --theme-border: rgba(255, 255, 255, 0.1);
+      }
+
+      /* Light Theme Override */
+      :root.light {
+        --theme-bg-primary: #FFFFFF;
+        --theme-bg-secondary: #F3F4F6;
+        --theme-bg-tertiary: #E5E7EB;
+        --theme-text-primary: #111827;
+        --theme-text-secondary: #4B5563;
+        --theme-text-muted: #9CA3AF;
+        --theme-border: #E5E7EB;
+      }
+
+      /* Shade Theme Override */
+      :root.shade {
+        --theme-bg-primary: #1e293b;
+        --theme-bg-secondary: #0f172a;
+        --theme-bg-tertiary: #334155;
+        --theme-text-primary: #f1f5f9;
+        --theme-text-secondary: #94a3b8;
+        --theme-text-muted: #64748b;
+        --theme-border: #334155;
+      }
+
+      body {
+        background-color: var(--theme-bg-primary);
+        color: var(--theme-text-primary);
+        font-family: 'Inter', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+      
+      /* Modern Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--theme-bg-primary); 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #333; 
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--brand-sage); 
+      }
+
+      /* Utilities */
+      .glass {
+        background: rgba(20, 20, 20, 0.6);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+      }
+      
+      .glass-panel {
+        background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.05);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      .text-shadow {
+        text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      }
+      
+      .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+      }
+      .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+    </style>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                black: '#050505',
+                ebony: '#111111',
+                silver: '#C0C0C0',
+                sage: '#7C9A92',
+                white: '#FFFFFF',
+              },
+              theme: {
+                bg: {
+                  primary: 'var(--theme-bg-primary)',
+                  secondary: 'var(--theme-bg-secondary)',
+                  tertiary: 'var(--theme-bg-tertiary)',
+                },
+                text: {
+                  primary: 'var(--theme-text-primary)',
+                  secondary: 'var(--theme-text-secondary)',
+                  muted: 'var(--theme-text-muted)',
+                },
+                border: 'var(--theme-border)',
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              display: ['Oswald', 'sans-serif'],
+            },
+            animation: {
+              'fade-in-down': 'fadeInDown 0.6s ease-out',
+              'fade-in-up': 'fadeInUp 0.6s ease-out',
+              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
+            keyframes: {
+              fadeInDown: {
+                '0%': { opacity: '0', transform: 'translateY(-20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              fadeInUp: {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              }
+            },
+            backgroundImage: {
+              'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+            }
+          }
+        }
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+    "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.86.1"
+  }
+}
+</script>
+</head>
+  <body class="antialiased overflow-x-hidden selection:bg-brand-sage selection:text-brand-black bg-theme-bg-primary text-theme-text-primary">
+    <div id="root"></div>
+  </body>
+</html>

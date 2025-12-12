@@ -1,0 +1,8 @@
+{
+  "name": "SigSecSpec - SMS (Signature Security Specialist - Security Management System)",
+  "description": "Premium security services website featuring AI-powered security consultation, service listings, and client engagement tools.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
